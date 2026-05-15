@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Financeiro Pro</title>
+    <style>
+        :root {
+            --primary: #2ecc71; --secondary: #3498db; --danger: #e74c3c;
+            --bg: #f4f7f6; --dark: #2c3e50; --white: #ffffff; --warning: #f1c40f; --purple: #9b59b6;
+        }
+        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg); margin: 0; padding-bottom: 30px; }
+        .app-container { width: 100%; max-width: 450px; margin: auto; }
+        
+        header {
+            background: var(--dark); color: white; padding: 20px;
+            border-bottom-left-radius: 25px; border-bottom-right-radius: 25px;
+        }
+
+        .income-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 15px; }
+        .income-grid input { background: rgba(255,255,255,0.1); border: none; color: white; padding: 10px; border-radius: 8px; width: 100%; font-size: 14px; text-align: center; }
+        
+        .card { background: var(--white); margin: 12px; padding: 18px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        
+        .summary-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center; }
+        .summary-row h3 { font-size: 9px; color: #95a5a6; text-transform: uppercase; margin: 0; }
+        .summary-row p { margin: 4px 0 0 0; font-weight: bold; font-size: 0.85rem; }
+
+        .invest-card { background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); color: white; }
+        .invest-card input { width: 100%; background: rgba(255,255,255,0.2); border: none; color: white; padding: 10px; border-radius: 8px; margin-top: 10px; font-weight: bold; text-align: center; }
+
+        .btn-check {
+            background: #eee; border: none; border-radius: 50%; width: 30px; height: 30px;
+            cursor: pointer; margin-right: 10px; display: flex; align-items: center; justify-content: center;
+        }
+        .btn-check.is-pago { background: var(--primary); color: white; }
+        .btn-delete { background: none; border: none; color: var(--danger); font-size: 18px; cursor: pointer; padding: 5px; }
+
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f9f9f9; }
+        .list-item.pago { opacity: 0.5; }
+
+        button.main-btn { width: 100%; padding: 14px; border: none; border-radius: 10px; background: var(--primary); color: white; font-weight: bold; font-size: 16px; margin-top: 5px; }
+        
+        .tabs { display: flex; margin: 10px; gap: 10px; }
+        .tab { flex: 1; padding: 12px; text-align: center; background: #ddd; border-radius: 10px; font-weight: bold; font-size: 14px; }
+        .tab.active { background: var(--secondary); color: white; }
+
+        input, select { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ddd; font-size: 16px; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header>
+        <h2 id="display-mes" style="margin:0; text-align: center; font-size: 1.2rem;">Maio 2024</h2>
+        
+        <div class="income-grid">
+            <div><label style="font-size: 9px; display:block; margin-bottom:3px;">DIA 05 (VR)</label><input type="number" id="ganho05" value="519" oninput="salvarEAtualizar()"></div>
+            <div><label style="font-size: 9px; display:block; margin-bottom:3px;">DIA 13</label><input type="number" id="ganho13" value="1500" oninput="salvarEAtualizar()"></div>
+            <div><label style="font-size: 9px; display:block; margin-bottom:3px;">DIA 20</label><input type="number" id="ganho20" value="1500" oninput="salvarEAtualizar()"></div>
+        </div>
+    </header>
+
+    <div class="tabs">
+        <div class="tab active" id="tab-atual" onclick="mudarTab('atual')">Mês Atual</div>
+        <div class="tab" id="tab-hist" onclick="mudarTab('hist')">Histórico</div>
+    </div>
+
+    <div id="view-atual">
+        <div class="card summary-row">
+            <div><h3>Receita</h3><p id="res-receita" style="color:var(--secondary)">R$ 0,00</p></div>
+            <div><h3>Já Pagou</h3><p id="res-pago" style="color:var(--danger)">R$ 0,00</p></div>
+            <div><h3>Sobra Livre</h3><p id="res-sobra" style="color:var(--primary)">R$ 0,00</p></div>
+        </div>
+
+        <div class="card invest-card">
+            <h4 style="margin:0; font-size: 14px;">META DE INVESTIMENTO (R$)</h4>
+            <p style="font-size: 11px; opacity: 0.9;">Quanto você quer guardar este mês?</p>
+            <input type="number" id="meta-invest" value="0" oninput="salvarEAtualizar()" placeholder="Ex: 200">
+            <div style="display:flex; justify-content: space-between; margin-top:10px; font-weight:bold; font-size: 14px;">
+                <span>Total a Investir:</span>
+                <span id="res-invest">R$ 0,00</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h4 style="margin:0 0 10px 0">Novo Gasto</h4>
+            <input type="text" id="desc" placeholder="Ex: Internet">
+            <input type="number" id="valor" placeholder="Valor R$">
+            <select id="tipo"><option value="fixo">Gasto Fixo</option><option value="diario">Gasto Diário</option></select>
+            <button class="main-btn" onclick="adicionarGasto()">Adicionar Gasto</button>
+        </div>
+
+        <div class="card">
+            <h4 style="margin:0 0 10px 0">Lista de Contas</h4>
+            <div id="lista"></div>
+            <button onclick="finalizarMes()" style="margin-top:20px; width:100%; background:var(--dark); color:white; border:none; padding:12px; border-radius:10px; font-weight: bold;">Fechar e Salvar Mês</button>
+        </div>
+    </div>
+
+    <div id="view-hist" style="display:none">
+        <div class="card" id="lista-historico"></div>
+    </div>
+</div>
+
+<script>
+    let transacoes = [];
+    let historico = [];
+
+    window.onload = () => {
+        const dados = JSON.parse(localStorage.getItem('financas_v8')) || {};
+        document.getElementById('ganho05').value = dados.ganho05 || 519;
+        document.getElementById('ganho13').value = dados.ganho13 || 1500;
+        document.getElementById('ganho20').value = dados.ganho20 || 1500;
+        document.getElementById('meta-invest').value = dados.metaInvest || 0;
+        transacoes = dados.transacoes || [];
+        historico = dados.historico || [];
+        salvarEAtualizar();
+        definirMes();
+    };
+
+    function adicionarGasto() {
+        const desc = document.getElementById('desc').value;
+        const valor = parseFloat(document.getElementById('valor').value);
+        const tipo = document.getElementById('tipo').value;
+        if (!desc || isNaN(valor)) return alert("Preencha descrição e valor!");
+        transacoes.push({ id: Date.now(), desc, valor, tipo, pago: false });
+        document.getElementById('desc').value = ''; document.getElementById('valor').value = '';
+        salvarEAtualizar();
+    }
+
+    function apagarGasto(id) {
+        if(confirm("Excluir este gasto?")) {
+            transacoes = transacoes.filter(t => t.id !== id);
+            salvarEAtualizar();
+        }
+    }
+
+    function alternarPago(id) {
+        const i = transacoes.findIndex(t => t.id === id);
+        transacoes[i].pago = !transacoes[i].pago;
+        salvarEAtualizar();
+    }
+
+    function salvarEAtualizar() {
+        const g05 = parseFloat(document.getElementById('ganho05').value) || 0;
+        const g13 = parseFloat(document.getElementById('ganho13').value) || 0;
+        const g20 = parseFloat(document.getElementById('ganho20').value) || 0;
+        const metaInv = parseFloat(document.getElementById('meta-invest').value) || 0;
+
+        const receitaTotal = g05 + g13 + g20;
+        const totalPago = transacoes.filter(t => t.pago).reduce((a, b) => a + b.valor, 0);
+        const totalGastos = transacoes.reduce((a, b) => a + b.valor, 0);
+        const sobraLivre = receitaTotal - totalGastos - metaInv;
+        
+        document.getElementById('res-receita').innerText = `R$ ${receitaTotal.toFixed(2)}`;
+        document.getElementById('res-pago').innerText = `R$ ${totalPago.toFixed(2)}`;
+        document.getElementById('res-sobra').innerText = `R$ ${sobraLivre.toFixed(2)}`;
+        document.getElementById('res-invest').innerText = `R$ ${metaInv.toFixed(2)}`;
+
+        localStorage.setItem('financas_v8', JSON.stringify({
+            ganho05: g05, ganho13: g13, ganho20: g20, metaInvest: metaInv,
+            transacoes, historico
+        }));
+        renderizar();
+    }
+
+    function renderizar() {
+        const div = document.getElementById('lista');
+        div.innerHTML = '';
+        transacoes.slice().reverse().forEach(t => {
+            div.innerHTML += `
+            <div class="list-item ${t.pago?'pago':''}">
+                <div style="display:flex;align-items:center">
+                    <button class="btn-check ${t.pago?'is-pago':''}" onclick="alternarPago(${t.id})">${t.pago?'✓':''}</button>
+                    <div><b>${t.desc}</b><br><small>${t.tipo.toUpperCase()}</small></div>
+                </div>
+                <div style="display:flex;align-items:center">
+                    <b style="font-size:14px">R$ ${t.valor.toFixed(2)}</b>
+                    <button class="btn-delete" onclick="apagarGasto(${t.id})">🗑️</button>
+                </div>
+            </div>`;
+        });
+
+        const histDiv = document.getElementById('lista-historico');
+        histDiv.innerHTML = historico.length ? '<h4 style="margin:0 0 15px 0">Meses Anteriores</h4>' : '<p>Sem histórico.</p>';
+        historico.slice().reverse().forEach(h => {
+            histDiv.innerHTML += `
+            <div style="background:#f8f9fa; padding:12px; border-radius:10px; margin-bottom:10px; border-left:4px solid var(--secondary)">
+                <div style="display:flex; justify-content:space-between; font-weight:bold;"><span>${h.mes}</span><span style="color:var(--primary)">Sobra: R$ ${h.sobra}</span></div>
+                <small style="color:var(--purple)">Investido: R$ ${h.investido}</small>
+            </div>`;
+        });
+    }
+
+    function finalizarMes() {
+        if(!confirm("Deseja arquivar e zerar os gastos?")) return;
+        historico.push({ 
+            mes: document.getElementById('display-mes').innerText, 
+            sobra: document.getElementById('res-sobra').innerText.replace('R$ ', ''),
+            investido: document.getElementById('res-invest').innerText.replace('R$ ', '')
+        });
+        transacoes = [];
+        salvarEAtualizar();
+    }
+
+    function mudarTab(tab) {
+        document.getElementById('view-atual').style.display = tab === 'atual' ? 'block' : 'none';
+        document.getElementById('view-hist').style.display = tab === 'hist' ? 'block' : 'none';
+        document.getElementById('tab-atual').className = `tab ${tab==='atual'?'active':''}`;
+        document.getElementById('tab-hist').className = `tab ${tab==='hist'?'active':''}`;
+    }
+
+    function definirMes() {
+        const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+        const d = new Date();
+        document.getElementById('display-mes').innerText = `${meses[d.getMonth()]} ${d.getFullYear()}`;
+    }
+</script>
+</body>
+</html>
